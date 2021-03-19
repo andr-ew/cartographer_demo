@@ -27,8 +27,8 @@ reg.play = warden.subloop(reg.rec) --playback loop region
 --softcut data
 sc = {}
 for i = 1,count do
-    sc[count] = {
-        play = 0, pre = 1, rec = 1, recording = false, recorded = false, clock = nil, t = 0, rate = 1, phase = 0
+    sc[i] = {
+        play = 0, pre = 1, rec = 1, recording = false, recorded = false, clock = nil, t = 0, rate = 1, phase = 0, play = 0
     }
 end
 
@@ -48,6 +48,7 @@ sc.setup = function()
         softcut.level_input_cut(1, i, 1)
         softcut.level_input_cut(2, i, 1)
         softcut.phase_quant(i, 1/25)
+        softcut.play(i, 0)
 
         reg.play[i]:update_voice(i)
         reg.play[i]:position(i, 0)
@@ -149,7 +150,7 @@ function enc(n, d)
         reg.play[i]:delta_end(d * sens, 'seconds') --E3  controls loop end
     end 
     
-    reg:play[i]:update_voice(i)
+    reg.play[i]:update_voice(i)
     redraw()
 end
 
@@ -160,6 +161,7 @@ lvl = { 1, 2, 15 }
 
 function redraw()
     local i = pg//1
+    screen.clear()
 
     --encoders
     screen.level(lvl[3])
@@ -172,17 +174,19 @@ function redraw()
     
     --phase
     screen.level(sc[i].play>1 and sc[i].rec>1 and lvl[3] or lvl[2] or 0)
-    screen.pixel(sc[i].phase*w + x[1], y[3])
+    screen.pixel(reg.blank[i]:phase_relative(sc[i].phase)*w + x[1], y[3])
     
     --regions
     for i,v in ipairs { 'blank', 'rec', 'play' } do
         local b = {
-            reg.blank[i]:get_start('seconds', 'absolute'),
-            reg.blank[i]:get_end('seconds', 'absolute')
+            reg[v][i]:get_start('seconds', 'absolute'),
+            reg[v][i]:get_end('seconds', 'absolute')
         }
         screen.level(lvl[i])
         screen.move(b[1]/w + x[1], y[3] + i)
         screen.line(b[2]/w + x[1], y[3] + i)
+        screen.stroke()
     end
 
+    screen.update()
 end
