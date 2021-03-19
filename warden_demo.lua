@@ -144,11 +144,12 @@ function enc(n, d)
 
     if n == 1 then 
         pg = util.clamp(1, count, pg + (d * 0.5)) --E1 controls page
-    elseif n == 2 then 
-        reg.play[i]:delta_start(d * sens, 'seconds') --E2 controls loop start
-    elseif n == 3 then 
-        reg.play[i]:delta_end(d * sens, 'seconds') --E3  controls loop end
-    end 
+    --if recorded then
+        elseif n == 2 then 
+            reg.play[i]:delta_start(d * sens, 'seconds') --E2 controls loop start
+        elseif n == 3 then 
+            reg.play[i]:delta_end(d * sens, 'seconds') --E3  controls loop end
+        end 
     
     reg.play[i]:update_voice(i)
     redraw()
@@ -167,10 +168,11 @@ function redraw()
     screen.level(lvl[3])
     screen.move(x[1], y[1])
     screen.text(i)
-    screen.move(x[1], y[2])
-    screen.text('start: '..util.round(reg.play[i]:get_start('seconds'), 0.01))
-    screen.move(x[2], y[2])
-    screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
+    --if recorded then
+        screen.move(x[1], y[2])
+        screen.text('start: '..util.round(reg.play[i]:get_start('seconds'), 0.01))
+        screen.move(x[2], y[2])
+        screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
     
     --phase
     screen.level(sc[i].play>1 and sc[i].rec>1 and lvl[3] or lvl[2] or 0)
