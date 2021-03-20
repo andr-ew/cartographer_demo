@@ -132,24 +132,27 @@ end
 --user interface
 
 function key(n, z)
+    local i = math.floor(pg)
+
     if z == 1 then
-        if n == 2 then sc:punch_in(pg, sc[pg].rec+1 & 1) --K2 is a loop pedeal punch-in
-        elseif n == 3 then sc:clear(pg) end --K3 clears the loop
+        if n == 2 then sc:punch_in(i, sc[i].rec+1 & 1) --K2 is a loop pedeal punch-in
+        elseif n == 3 then sc:clear(i) end --K3 clears the loop
     end
     redraw()
 end
 
 function enc(n, d)
-    local i = pg//1
+    local i = math.floor(pg)
 
     if n == 1 then 
-        pg = util.clamp(1, count, pg + (d * 0.5)) --E1 controls page
-    --if recorded then
-        elseif n == 2 then 
+        pg = util.clamp(pg + (d * 0.5), 1, count) --E1 controls page
+    elseif sc[i].recorded then
+        if n == 2 then 
             reg.play[i]:delta_start(d * sens, 'seconds') --E2 controls loop start
         elseif n == 3 then 
             reg.play[i]:delta_end(d * sens, 'seconds') --E3  controls loop end
         end 
+    end 
     
     reg.play[i]:update_voice(i)
     redraw()
@@ -158,35 +161,47 @@ end
 x = { 2, 64, 128 - 2 }
 w = x[#x] - x[1]
 y = { 64/4, 64/4 * 2, 64/4 * 3 }
-lvl = { 1, 2, 15 }
+lvl = { 2, 8, 15 }
 
 function redraw()
-    local i = pg//1
+    local i = math.floor(pg)
     screen.clear()
+    screen.aa(0)
 
     --encoders
     screen.level(lvl[3])
     screen.move(x[1], y[1])
     screen.text(i)
-    --if recorded then
+    
+    if sc[i].recorded then
         screen.move(x[1], y[2])
         screen.text('start: '..util.round(reg.play[i]:get_start('seconds'), 0.01))
         screen.move(x[2], y[2])
         screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
+    end
     
+    local scale = 50
+
     --phase
-    screen.level(sc[i].play>1 and sc[i].rec>1 and lvl[3] or lvl[2] or 0)
-    screen.pixel(reg.blank[i]:phase_relative(sc[i].phase)*w + x[1], y[3])
+    screen.pixel(math.floor(reg.blank[i]:phase_relative(sc[i].phase, 'fraction')*w*scale + x[1]), math.floor(y[3]))
+    screen.level(sc[i].play>0 and (sc[i].rec>0 and lvl[3] or lvl[2]) or 0)
+    screen.fill()
     
     --regions
-    for i,v in ipairs { 'blank', 'rec', 'play' } do
+    for n,v in ipairs { 'blank', 'rec', 'play' } do
         local b = {
             reg[v][i]:get_start('seconds', 'absolute'),
             reg[v][i]:get_end('seconds', 'absolute')
         }
-        screen.level(lvl[i])
-        screen.move(b[1]/w + x[1], y[3] + i)
-        screen.line(b[2]/w + x[1], y[3] + i)
+        for j = 1,2 do
+            b[j] = (
+                b[j] - reg.blank[i]:get_start('seconds', 'absolute')
+            ) / reg.blank[i]:get_length()
+        end
+
+        screen.level(lvl[n])
+        screen.move(b[1]*w*scale + x[1], y[3] - n*2 + 8)
+        screen.line(b[2]*w*scale + x[1], y[3] - n*2 + 8)
         screen.stroke()
     end
 
