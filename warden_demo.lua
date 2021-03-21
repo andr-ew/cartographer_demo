@@ -49,6 +49,7 @@ sc.setup = function()
         softcut.level_input_cut(2, i, 1)
         softcut.phase_quant(i, 1/25)
         softcut.play(i, 0)
+        softcut.level(i, 1)
 
         reg.play[i]:update_voice(i)
         reg.play[i]:position(i, 0)
@@ -91,6 +92,7 @@ sc.punch_in = function(s, i, v)
             while true do
                 clock.sleep(quant)
                 s[i].t = s[i].t + (quant * s[i].rate)
+                --increase the slice size too, but give it a lil breathing room
             end
         end)
 
@@ -180,7 +182,7 @@ function redraw()
         screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
     end
     
-    local scale = 50
+    local scale = 25
 
     --phase
     screen.pixel(math.floor(reg.blank[i]:phase_relative(sc[i].phase, 'fraction')*w*scale + x[1]), math.floor(y[3]))
