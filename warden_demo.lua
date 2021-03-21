@@ -76,6 +76,7 @@ sc.update_recpre = function(s, n)
 end
 
 --loop pedal punch in
+--[[
 sc.punch_in = function(s, i, v)
     if s[i].recorded then
         s[i].rec = v; s:update_recpre(i)
@@ -113,6 +114,7 @@ sc.punch_in = function(s, i, v)
         reg.play[i]:update_voice(i)
     end
 end
+--]]
 
 --softcut clear
 sc.clear = function(s, i)
