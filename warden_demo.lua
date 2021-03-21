@@ -19,7 +19,7 @@ quant = 0.01
 sens = 0.01
 
 --warden setup
-local reg = {}
+reg = {}
 reg.blank = warden.divide(warden.buffer, count) --available loop region
 reg.rec = warden.subloop(reg.blank) --initial recorded loop region
 reg.play = warden.subloop(reg.rec) --playback loop region
@@ -28,7 +28,7 @@ reg.play = warden.subloop(reg.rec) --playback loop region
 sc = {}
 for i = 1,count do
     sc[i] = {
-        play = 0, pre = 1, rec = 1, recording = false, recorded = false, clock = nil, t = 0, rate = 1, phase = 0, play = 0
+        play = 0, pre = 1, rec = 0, recording = false, recorded = false, clock = nil, t = 0, rate = 1, phase = 0, play = 0
     }
 end
 
@@ -49,6 +49,7 @@ sc.setup = function()
         softcut.level_input_cut(2, i, 1)
         softcut.phase_quant(i, 1/25)
         softcut.play(i, 0)
+        softcut.level(i, 1)
 
         reg.play[i]:update_voice(i)
         reg.play[i]:position(i, 0)
@@ -79,34 +80,22 @@ sc.punch_in = function(s, i, v)
     if s[i].recorded then
         s[i].rec = v; s:update_recpre(i)
     elseif v == 1 then
+        reg.play[i]:position(i, 0)
         s[i].rec = 1; s:update_recpre(i)
+        s[i].play = 1; softcut.play(i, 1)
 
-        reg.rec[i]:position(i, 0)
-        sc[i].play = 1; softcut.play(i, 1)
-
-        reg.rec[i]:set_length(1, 'fraction')
-        reg.play[i]:set_length(1, 'fraction')
-
-        s[i].clock = clock.run(function()
-            while true do
-                clock.sleep(quant)
-                s[i].t = s[i].t + (quant * s[i].rate)
-            end
-        end)
+        reg.rec[i]:punch_in()
 
         s[i].recording = true
-
+   
         reg.play[i]:update_voice(i)
     elseif s[i].recording then
         s[i].rec = 0; s:update_recpre(i)
 
-        reg.rec[i]:set_length(s[i].t)
-        reg.play[i]:set_length(1, 'fraction')
+        reg.rec[i]:punch_out()
 
-        clock.cancel(s[i].clock)
         s[i].recorded = true
         s[i].recording = false
-        s[i].t = 0
         
         reg.play[i]:update_voice(i)
     end
@@ -115,14 +104,17 @@ end
 --softcut clear
 sc.clear = function(s, i)
     s[i].rec = 0; s:update_recpre(i)
+    s[i].play = 0; softcut.play(i, 0)
+    reg.play[i]:position(i, 0)
 
-    sc[i].play = 0; softcut.play(i, 0)
+    reg.rec[i]:punch_out()
     reg.rec[i]:clear()
 
-    if s[i].clock then clock.cancel(s[i].clock) end
     s[i].recorded = false
     s[i].recording = false
-    s[i].t = 0
+
+    reg.rec[i]:expand()
+    reg.play[i]:update_voice(i)
 end
 
 function init()
@@ -180,7 +172,7 @@ function redraw()
         screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
     end
     
-    local scale = 50
+    local scale = 10
 
     --phase
     screen.pixel(math.floor(reg.blank[i]:phase_relative(sc[i].phase, 'fraction')*w*scale + x[1]), math.floor(y[3]))
