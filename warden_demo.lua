@@ -51,8 +51,8 @@ sc.setup = function()
         softcut.play(i, 0)
         softcut.level(i, 1)
 
-        reg.play[i]:update_voice(i)
-        reg.play[i]:position(i, 0)
+        warden.assign(reg.play[i], i)
+        reg.play:position(i, 0)
     end
 
     local function e(i, ph)
@@ -80,24 +80,20 @@ sc.punch_in = function(s, i, v)
     if s[i].recorded then
         s[i].rec = v; s:update_recpre(i)
     elseif v == 1 then
-        reg.play[i]:position(i, 0)
+        reg.play:position(i, 0)
         s[i].rec = 1; s:update_recpre(i)
         s[i].play = 1; softcut.play(i, 1)
 
-        reg.rec[i]:punch_in()
+        reg.rec:punch_in(i)
 
         s[i].recording = true
-   
-        reg.play[i]:update_voice(i)
     elseif s[i].recording then
         s[i].rec = 0; s:update_recpre(i)
 
-        reg.rec[i]:punch_out()
+        reg.rec:punch_out(i)
 
         s[i].recorded = true
         s[i].recording = false
-        
-        reg.play[i]:update_voice(i)
     end
 end
 
@@ -105,16 +101,15 @@ end
 sc.clear = function(s, i)
     s[i].rec = 0; s:update_recpre(i)
     s[i].play = 0; softcut.play(i, 0)
-    reg.play[i]:position(i, 0)
+    reg.play:position(i, 0)
 
-    reg.rec[i]:punch_out()
-    reg.rec[i]:clear()
+    reg.rec:punch_out(i)
+    reg.rec:clear(i)
 
     s[i].recorded = false
     s[i].recording = false
 
-    reg.rec[i]:expand()
-    reg.play[i]:update_voice(i)
+    reg.rec:expand(i)
 end
 
 function init()
@@ -140,13 +135,12 @@ function enc(n, d)
         pg = util.clamp(pg + (d * 0.5), 1, count) --E1 controls page
     elseif sc[i].recorded then
         if n == 2 then 
-            reg.play[i]:delta_start(d * sens, 'seconds') --E2 controls loop start
+            reg.play:delta_start(i, d * sens, 'seconds') --E2 controls loop start
         elseif n == 3 then 
-            reg.play[i]:delta_end(d * sens, 'seconds') --E3  controls loop end
+            reg.play:delta_end(i, d * sens, 'seconds') --E3  controls loop end
         end 
     end 
     
-    reg.play[i]:update_voice(i)
     redraw()
 end
 
@@ -167,28 +161,28 @@ function redraw()
     
     if sc[i].recorded then
         screen.move(x[1], y[2])
-        screen.text('start: '..util.round(reg.play[i]:get_start('seconds'), 0.01))
+        screen.text('start: '..util.round(reg.play:get_start(i, 'seconds'), 0.01))
         screen.move(x[2], y[2])
-        screen.text('end: '..util.round(reg.play[i]:get_end('seconds'), 0.01))
+        screen.text('end: '..util.round(reg.play:get_end(i, 'seconds'), 0.01))
     end
     
     local scale = 10
 
     --phase
-    screen.pixel(math.floor(reg.blank[i]:phase_relative(sc[i].phase, 'fraction')*w*scale + x[1]), math.floor(y[3]))
+    screen.pixel(math.floor(reg.blank:phase_relative(i, sc[i].phase, 'fraction')*w*scale + x[1]), math.floor(y[3]))
     screen.level(sc[i].play>0 and (sc[i].rec>0 and lvl[3] or lvl[2]) or 0)
     screen.fill()
     
     --regions
     for n,v in ipairs { 'blank', 'rec', 'play' } do
         local b = {
-            reg[v][i]:get_start('seconds', 'absolute'),
-            reg[v][i]:get_end('seconds', 'absolute')
+            reg[v]:get_start(i, 'seconds', 'absolute'),
+            reg[v]:get_end(i, 'seconds', 'absolute')
         }
         for j = 1,2 do
             b[j] = (
-                b[j] - reg.blank[i]:get_start('seconds', 'absolute')
-            ) / reg.blank[i]:get_length()
+                b[j] - reg.blank:get_start(i, 'seconds', 'absolute')
+            ) / reg.blank:get_length(i)
         end
 
         screen.level(lvl[n])
