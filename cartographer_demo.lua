@@ -1,4 +1,4 @@
---warden demo
+--cartographer demo
 --six loop pedals
 --
 -- v1 @andrew
@@ -10,7 +10,7 @@
 
 function r() norns.script.load(norns.script.state) end
 
-warden = include 'lib/warden/warden'
+cartographer = include 'lib/cartographer/cartographer'
 
 --global variables
 count = 6
@@ -18,11 +18,11 @@ pg = 1
 quant = 0.01
 sens = 0.01
 
---warden setup
+--cartographer setup
 reg = {}
-reg.blank = warden.divide(warden.buffer, count) --available loop region
-reg.rec = warden.subloop(reg.blank) --initial recorded loop region
-reg.play = warden.subloop(reg.rec) --playback loop region
+reg.blank = cartographer.divide(cartographer.buffer, count) --available loop region
+reg.rec = cartographer.subloop(reg.blank) --initial recorded loop region
+reg.play = cartographer.subloop(reg.rec) --playback loop region
 
 --softcut data
 sc = {}
@@ -51,7 +51,7 @@ sc.setup = function()
         softcut.play(i, 0)
         softcut.level(i, 1)
 
-        warden.assign(reg.play[i], i)
+        cartographer.assign(reg.play[i], i)
         reg.play:position(i, 0)
     end
 
